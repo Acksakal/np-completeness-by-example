@@ -1,491 +1,330 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Exam scheduler: grid, traversal, backtracking</title>
-    <style>
-        :root {
-            --bg: #fff;
-            --fg: #1c1c1e;
-            --mute: #6b6b70;
-            --line: #d4d4d8;
-            --low: #f1f1f4;
-            --on: #7c5cff;
-            --new: #f5a524;
-            --look: #1f7ae0;
-            --bad: #e5484d;
-            --good: #2fa36b;
-            --s0: #7c5cff;
-            --s1: #1aa7a0;
-            --s2: #e8743b;
-            --card: #f7f7f9
-        }
-
-        @media(prefers-color-scheme:dark) {
-            :root {
-                --bg: #1b1b1f;
-                --fg: #ececf0;
-                --mute: #9a9aa3;
-                --line: #3a3a42;
-                --low: #25252b;
-                --card: #232329
-            }
-        }
-
-        * {
-            box-sizing: border-box
-        }
-
-        body {
-            margin: 0;
-            padding: 20px;
-            background: var(--bg);
-            color: var(--fg);
-            font: 15px/1.45 system-ui, sans-serif
-        }
-
-        h1 {
-            font-size: 20px;
-            margin: 0 0 4px
-        }
-
-        .sub {
-            color: var(--mute);
-            margin: 0 0 14px
-        }
-
-        .bar {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            align-items: center;
-            margin-bottom: 12px
-        }
-
-        button {
-            background: var(--card);
-            color: var(--fg);
-            border: 1px solid var(--line);
-            border-radius: 8px;
-            padding: 6px 14px;
-            font: inherit;
-            cursor: pointer
-        }
-
-        button:hover {
-            border-color: var(--on)
-        }
-
-        .phase {
-            font-weight: 600;
-            margin-left: auto
-        }
-
-        .wrap {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px
-        }
-
-        .card {
-            background: var(--card);
-            border: 1px solid var(--line);
-            border-radius: 12px;
-            padding: 14px
-        }
-
-        table {
-            border-collapse: collapse
-        }
-
-        td,
-        th {
-            width: 52px;
-            height: 40px;
-            text-align: center;
-            font-size: 13px;
-            border: 1px solid var(--line)
-        }
-
-        th {
-            color: var(--mute);
-            font-weight: 500;
-            border: none
-        }
-
-        th.rowh {
-            text-align: right;
-            padding-right: 8px;
-            width: 70px
-        }
-
-        td.low {
-            background: var(--low);
-            box-shadow: inset 0 0 0 4px var(--low)
-        }
-
-        .legend {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            margin-top: 10px;
-            font-size: 13px;
-            color: var(--mute)
-        }
-
-        .legend i {
-            display: inline-block;
-            width: 14px;
-            height: 14px;
-            border-radius: 3px;
-            margin-right: 8px;
-            vertical-align: -2px
-        }
-
-        .legend .lowsw {
-            background: var(--on);
-            box-shadow: inset 0 0 0 3px var(--low)
-        }
-
-        .legend .ring {
-            border: 3px solid var(--look)
-        }
-
-        .draw {
-            stroke-dasharray: 1;
-            stroke-dashoffset: 1;
-            animation: draw 2.2s ease-out forwards
-        }
-
-        @keyframes draw {
-            to {
-                stroke-dashoffset: 0
-            }
-        }
-
-        .pulse {
-            animation: pulse 1.2s ease-in-out infinite
-        }
-
-        @keyframes pulse {
-            50% {
-                r: 9
-            }
-        }
-
-        td.on {
-            background: var(--on);
-            color: #fff
-        }
-
-        td.new {
-            background: var(--new);
-            color: #000;
-            font-weight: 700
-        }
-
-        td.look {
-            outline: 3px solid var(--look);
-            outline-offset: -3px
-        }
-
-        td.look.hit {
-            outline-color: var(--bad);
-            background: var(--bad);
-            color: #fff
-        }
-
-        th.cur {
-            color: var(--look);
-            font-weight: 700
-        }
-
-        .note {
-            color: var(--mute);
-            font-size: 13px;
-            margin-top: 8px;
-            max-width: 400px
-        }
-
-        .ex {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 6px 8px;
-            border-radius: 8px;
-            border: 2px solid transparent;
-            min-width: 260px
-        }
-
-        .ex.cur {
-            border-color: var(--look)
-        }
-
-        .ex.fail {
-            border-color: var(--bad);
-            background: color-mix(in srgb, var(--bad) 15%, transparent)
-        }
-
-        .ex b {
-            width: 70px
-        }
-
-        .chip {
-            padding: 2px 10px;
-            border-radius: 99px;
-            color: #fff;
-            font-size: 13px;
-            min-width: 88px;
-            text-align: center
-        }
-
-        .chip.none {
-            background: transparent;
-            color: var(--mute);
-            border: 1px dashed var(--line)
-        }
-
-        .log {
-            margin-top: 14px;
-            padding: 12px 14px;
-            border-radius: 10px;
-            background: var(--card);
-            border: 1px solid var(--line);
-            min-height: 48px
-        }
-
-        .log.bad {
-            border-color: var(--bad)
-        }
-
-        .log.good {
-            border-color: var(--good)
-        }
-
-        .stat {
-            color: var(--mute);
-            font-size: 13px;
-            margin-top: 8px
-        }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Exam scheduler: grid, traversal, backtracking</title>
+<style>
+:root{--bg:#fff;--fg:#1c1c1e;--mute:#6b6b70;--line:#d4d4d8;--low:#f1f1f4;--on:#7c5cff;--new:#f5a524;--look:#1f7ae0;--bad:#e5484d;--good:#2fa36b;--s0:#7c5cff;--s1:#1aa7a0;--s2:#e8743b;--card:#f7f7f9}
+@media(prefers-color-scheme:dark){:root{--bg:#1b1b1f;--fg:#ececf0;--mute:#9a9aa3;--line:#3a3a42;--low:#25252b;--card:#232329}}
+*{box-sizing:border-box}
+body{margin:0;padding:20px;background:var(--bg);color:var(--fg);font:15px/1.45 system-ui,sans-serif}
+h1{font-size:20px;margin:0 0 4px}
+.sub{color:var(--mute);margin:0 0 14px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+button{background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 14px;font:inherit;cursor:pointer}
+button:hover{border-color:var(--on)}
+.phase{font-weight:600;margin-left:auto}
+.wrap{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+table{border-collapse:collapse}
+td,th{width:52px;height:40px;text-align:center;font-size:13px;border:1px solid var(--line)}
+th{color:var(--mute);font-weight:500;border:none}
+th.rowh{text-align:right;padding-right:8px;width:70px}
+td.low{background:var(--low);box-shadow:inset 0 0 0 4px var(--low)}
+.legend{display:flex;flex-direction:column;gap:4px;margin-top:10px;font-size:13px;color:var(--mute)}
+.legend i{display:inline-block;width:14px;height:14px;border-radius:3px;margin-right:8px;vertical-align:-2px}
+.legend .lowsw{background:var(--on);box-shadow:inset 0 0 0 3px var(--low)}
+.legend .ring{border:3px solid var(--look)}
+.draw{stroke-dasharray:1;stroke-dashoffset:1;animation:draw 2.2s ease-out forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.pulse{animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{50%{r:9}}
+.flip{perspective:1400px;width:490px;max-width:100%}
+.flip-inner{display:grid;transform-style:preserve-3d;transition:transform .7s cubic-bezier(.4,.2,.2,1)}
+.flip-inner.flipped{transform:rotateY(180deg)}
+.face{grid-area:1/1;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.face.back{transform:rotateY(180deg)}
+.flip-inner:not(.flipped) .back,.flip-inner.flipped .front{pointer-events:none}
+.facehead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.flipbtn{width:30px;height:30px;padding:0;border-radius:50%;font-size:16px;line-height:1;border-color:var(--on)}
+.treewrap{border:1px solid var(--line);border-radius:8px;background:var(--bg);margin-top:6px}
+td.on{background:var(--on);color:#fff}
+td.new{background:var(--new);color:#000;font-weight:700}
+td.look{outline:3px solid var(--look);outline-offset:-3px}
+td.look.hit{outline-color:var(--bad);background:var(--bad);color:#fff}
+th.cur{color:var(--look);font-weight:700}
+.note{color:var(--mute);font-size:13px;margin-top:8px;max-width:400px}
+.ex{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:8px;border:2px solid transparent;min-width:260px}
+.ex.cur{border-color:var(--look)}
+.ex.fail{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 15%,transparent)}
+.ex b{width:70px}
+.chip{padding:2px 10px;border-radius:99px;color:#fff;font-size:13px;min-width:88px;text-align:center}
+.chip.none{background:transparent;color:var(--mute);border:1px dashed var(--line)}
+.log{margin-top:14px;padding:12px 14px;border-radius:10px;background:var(--card);border:1px solid var(--line);min-height:48px}
+.log.bad{border-color:var(--bad)}.log.good{border-color:var(--good)}
+.stat{color:var(--mute);font-size:13px;margin-top:8px}
+</style>
 </head>
-
 <body>
-    <h1>Exam scheduler: build, traverse, backtrack</h1>
-    <p class="sub">Exams are dots, shared students are edges, time slots are colors. Same algorithm as the C code.</p>
-    <div class="bar">
-        <button id="play">Play</button><button id="step">Step</button><button id="reset">Reset</button>
-        <label>Speed <input type="range" id="speed" min="1" max="10" value="5"></label>
-        <span class="phase" id="phase"></span>
+<h1>Exam scheduler: build, traverse, backtrack</h1>
+<p class="sub">Exams are dots, shared students are edges, time slots are colors. Same algorithm as the C code.</p>
+<div class="bar">
+  <button id="play">Play</button><button id="step">Step</button><button id="reset">Reset</button>
+  <label>Speed <input type="range" id="speed" min="1" max="10" value="5"></label>
+  <span class="phase" id="phase"></span>
+</div>
+<div class="wrap">
+  <div class="card"><div id="grid"></div>
+    <div class="legend">
+      <span><i style="background:var(--on)"></i>two exams share a student</span>
+      <span><i style="background:var(--new)"></i>just added</span>
+      <span><i class="lowsw"></i>shaded frame: the part the solver reads</span>
+      <span><i class="ring"></i>cell being checked</span>
+      <span><i style="background:var(--bad)"></i>clash</span>
     </div>
-    <div class="wrap">
-        <div class="card">
-            <div id="grid"></div>
-            <div class="legend">
-                <span><i style="background:var(--on)"></i>two exams share a student</span>
-                <span><i style="background:var(--new)"></i>just added</span>
-                <span><i class="lowsw"></i>shaded frame: the part the solver reads</span>
-                <span><i class="ring"></i>cell being checked</span>
-                <span><i style="background:var(--bad)"></i>clash</span>
-            </div>
-            <div class="note">Rows and columns are exams. Every conflict fills two cells, mirror images across the
-                diagonal. While solving, the program only looks at the cells below the diagonal (each exam is compared
-                only with exams placed before it), so those cells keep a grey frame even when they turn purple.</div>
-        </div>
-        <div class="card">
-            <div id="exams"></div>
-            <div class="stat" id="stat"></div>
-        </div>
-        <div class="card"><svg id="graph" viewBox="0 0 440 380" style="width:420px;max-width:100%"></svg>
-            <div class="note">Line = a student takes both exams. Fill color = slot. Blue ring = exam being placed, red
-                ring = no slot fits.</div>
-        </div>
-        <div class="card"><svg id="chart" viewBox="0 0 460 360" style="width:460px;max-width:100%"></svg>
-            <div class="note" id="chartnote"></div>
-        </div>
-    </div>
-    <div class="log" id="log"></div>
-    <script>
-        var names = ['Bio', 'History', 'Math', 'Physics', 'Chem', 'Art'];
-        var slots = ['Mon 9:00', 'Mon 14:00', 'Tue 9:00'];
-        var N = 6, K = 3;
-        var idx = {}; names.forEach(function (n, i) { idx[n] = i; });
-        var edges = [['Math', 'Physics', 'Anna'], ['Math', 'Chem', 'Anna'], ['Physics', 'Chem', 'Anna'],
-        ['Chem', 'Bio', 'Ben'], ['Physics', 'Bio', 'Ben'], ['History', 'Math', 'Carla'], ['History', 'Art', 'Dan']];
+    <div class="note">Rows and columns are exams. Every conflict fills two cells, mirror images across the diagonal. While solving, the program only looks at the cells below the diagonal (each exam is compared only with exams placed before it), so those cells keep a grey frame even when they turn purple.</div></div>
+  <div class="card"><div id="exams"></div><div class="stat" id="stat"></div></div>
+  <div class="card"><svg id="graph" viewBox="0 0 440 380" style="width:420px;max-width:100%"></svg>
+    <div class="note">Line = a student takes both exams. Fill color = slot. Blue ring = exam being placed, red ring = no slot fits.</div></div>
+  <div class="flip"><div class="flip-inner" id="flipinner">
+    <div class="card face front">
+      <div class="facehead"><b>Search tree</b><button class="flipbtn" id="flipfront" title="Flip card: show the Big-O chart" aria-label="Flip card: show the Big-O chart">⟳</button></div>
+      <div class="stat" id="treesum"></div>
+      <div class="treewrap" id="treewrap"><svg id="tree"></svg></div>
+      <div class="legend">
+        <span><i style="background:var(--s0)"></i>slot placed (S1, S2, S3 = the three slots)</span>
+        <span><i style="background:var(--bad)"></i>clash: branch cut, nothing below it is explored</span>
+        <span><i style="background:var(--low);border:1px dashed var(--mute)"></i>undone by backtracking</span>
+        <span><i class="ring"></i>slot being tried now</span>
+      </div>
+      <div class="note">Each column is an exam and each pill is one slot the solver tried. A path from left to right is a partial schedule. The full tree has 3 + 9 + 27 + 81 + 243 + 729 = 1,092 nodes; the solver only builds the part it needs.</div></div>
+    <div class="card face back">
+      <div class="facehead"><b>Big-O chart</b><button class="flipbtn" id="flipback" title="Flip card: show the search tree" aria-label="Flip card: show the search tree">⟳</button></div>
+      <svg id="chart" viewBox="0 0 460 360" style="width:460px;max-width:100%"></svg>
+      <div class="note" id="chartnote"></div></div>
+  </div></div>
+</div>
+<div class="log" id="log"></div>
+<script>
+var names=['Bio','History','Math','Physics','Chem','Art'];
+var slots=['Mon 9:00','Mon 14:00','Tue 9:00'];
+var N=6,K=3;
+var idx={};names.forEach(function(n,i){idx[n]=i;});
+var edges=[['Math','Physics','Anna'],['Math','Chem','Anna'],['Physics','Chem','Anna'],
+  ['Chem','Bio','Ben'],['Physics','Bio','Ben'],['History','Math','Carla'],['History','Art','Dan']];
 
-        /* Run the real algorithm once and record every step as an event. */
-        function buildEvents() {
-            var ev = [], cf = [], slot = [], i, j;
-            for (i = 0; i < N; i++) { cf.push([]); slot.push(-1); for (j = 0; j < N; j++)cf[i].push(false); }
-            edges.forEach(function (x) {
-                var a = idx[x[0]], b = idx[x[1]]; cf[a][b] = cf[b][a] = true;
-                ev.push({ t: 'add', a: a, b: b, msg: x[2] + ' takes both ' + x[0] + ' and ' + x[1] + ': set [' + x[0] + '][' + x[1] + '] and [' + x[1] + '][' + x[0] + '].' });
-            });
-            function solve(e) {
-                var c, o, ok, cell, hit;
-                if (e === N) { ev.push({ t: 'done', msg: 'Every exam has a slot. Schedule found.' }); return true; }
-                for (c = 0; c < K; c++) {
-                    ev.push({ t: 'try', e: e, c: c, msg: 'Try ' + names[e] + ' in ' + slots[c] + '.' });
-                    ok = true;
-                    for (o = 0; o < e; o++) {
-                        cell = cf[e][o]; hit = cell && slot[o] === c;
-                        ev.push({
-                            t: 'check', e: e, c: c, o: o, hit: hit, msg: 'conflict[' + names[e] + '][' + names[o] + '] is ' + (cell ? 'yes' : 'no') +
-                                (cell ? '; ' + names[o] + ' is at ' + slots[slot[o]] + (hit ? ' = CLASH.' : ', no clash.') : ', nothing to compare.')
-                        });
-                        if (hit) { ok = false; break; }
-                    }
-                    if (ok) {
-                        slot[e] = c; ev.push({ t: 'place', e: e, c: c, msg: names[e] + ' placed in ' + slots[c] + '. Move on to the next exam.' });
-                        if (solve(e + 1)) return true;
-                        slot[e] = -1; ev.push({ t: 'undo', e: e, msg: 'BACKTRACK: undo ' + names[e] + ' and try its next slot.' });
-                    }
-                }
-                ev.push({ t: 'fail', e: e, msg: 'No slot works for ' + names[e] + '. Return to the previous exam.' });
-                return false;
-            }
-            solve(0);
-            return ev;
-        }
+/* Run the real algorithm once and record every step as an event. */
+function buildEvents(){
+  var ev=[],cf=[],slot=[],i,j;
+  for(i=0;i<N;i++){cf.push([]);slot.push(-1);for(j=0;j<N;j++)cf[i].push(false);}
+  edges.forEach(function(x){
+    var a=idx[x[0]],b=idx[x[1]];cf[a][b]=cf[b][a]=true;
+    ev.push({t:'add',a:a,b:b,msg:x[2]+' takes both '+x[0]+' and '+x[1]+': set ['+x[0]+']['+x[1]+'] and ['+x[1]+']['+x[0]+'].'});
+  });
+  function solve(e){
+    var c,o,ok,cell,hit;
+    if(e===N){ev.push({t:'done',msg:'Every exam has a slot. Schedule found.'});return true;}
+    for(c=0;c<K;c++){
+      ev.push({t:'try',e:e,c:c,msg:'Try '+names[e]+' in '+slots[c]+'.'});
+      ok=true;
+      for(o=0;o<e;o++){
+        cell=cf[e][o];hit=cell&&slot[o]===c;
+        ev.push({t:'check',e:e,c:c,o:o,hit:hit,msg:'conflict['+names[e]+']['+names[o]+'] is '+(cell?'yes':'no')+
+          (cell?'; '+names[o]+' is at '+slots[slot[o]]+(hit?' = CLASH.':', no clash.'):', nothing to compare.')});
+        if(hit){ok=false;break;}
+      }
+      if(ok){
+        slot[e]=c;ev.push({t:'place',e:e,c:c,msg:names[e]+' placed in '+slots[c]+'. Move on to the next exam.'});
+        if(solve(e+1))return true;
+        slot[e]=-1;ev.push({t:'undo',e:e,msg:'BACKTRACK: undo '+names[e]+' and try its next slot.'});
+      }
+    }
+    ev.push({t:'fail',e:e,msg:'No slot works for '+names[e]+'. Return to the previous exam.'});
+    return false;
+  }
+  solve(0);
+  return ev;
+}
 
-        var events = buildEvents(), pos, st, timer = null;
-        function reset() {
-            var i, j; st = { cf: [], slot: [], row: -1, look: null, hit: false, newc: [], fail: -1, msg: 'Press Play or Step to begin.', kind: '', phase: '', back: 0, tries: 0 };
-            for (i = 0; i < N; i++) { st.cf.push([]); st.slot.push(-1); for (j = 0; j < N; j++)st.cf[i].push(false); }
-            pos = 0; render();
-        }
-        function apply(v) {
-            st.look = null; st.hit = false; st.newc = []; st.fail = -1; st.kind = ''; st.msg = v.msg;
-            if (v.t === 'add') { st.cf[v.a][v.b] = st.cf[v.b][v.a] = true; st.newc = [[v.a, v.b], [v.b, v.a]]; st.phase = 'Phase 1: building the grid'; st.row = -1; }
-            else {
-                st.phase = 'Phase 2: solving';
-                if (v.t === 'try') { st.row = v.e; st.tries++; }
-                if (v.t === 'check') { st.row = v.e; st.look = [v.e, v.o]; st.hit = v.hit; if (v.hit) st.kind = 'bad'; }
-                if (v.t === 'place') { st.slot[v.e] = v.c; }
-                if (v.t === 'undo') { st.slot[v.e] = -1; st.row = v.e; st.back++; st.kind = 'bad'; }
-                if (v.t === 'fail') { st.fail = v.e; st.row = v.e; st.kind = 'bad'; }
-                if (v.t === 'done') { st.row = -1; st.kind = 'good'; }
-            }
-        }
-        function render() {
-            var h = '<table><tr><th></th>', r, c, cls, txt;
-            for (c = 0; c < N; c++)h += '<th class="' + (st.row === c ? '' : '') + '">' + names[c] + '</th>';
-            h += '</tr>';
-            for (r = 0; r < N; r++) {
-                h += '<tr><th class="rowh' + (st.row === r ? ' cur' : '') + '">' + names[r] + '</th>';
-                for (c = 0; c < N; c++) {
-                    cls = r > c ? 'low' : ''; txt = '';
-                    if (st.cf[r][c]) { cls += ' on'; txt = 'x'; }
-                    if (st.newc.some(function (p) { return p[0] === r && p[1] === c; })) { cls += ' new'; txt = '*'; }
-                    if (st.look && st.look[0] === r && st.look[1] === c) { cls += ' look' + (st.hit ? ' hit' : ''); }
-                    h += '<td class="' + cls + '">' + txt + '</td>';
-                }
-                h += '</tr>';
-            }
-            document.getElementById('grid').innerHTML = h + '</table>';
-            var e = '', s;
-            for (r = 0; r < N; r++) {
-                s = st.slot[r];
-                e += '<div class="ex' + (st.fail === r ? ' fail' : st.row === r ? ' cur' : '') + '"><b>' + names[r] + '</b>' +
-                    (s < 0 ? '<span class="chip none">no slot</span>' : '<span class="chip" style="background:var(--s' + s + ')">' + slots[s] + '</span>') + '</div>';
-            }
-            document.getElementById('exams').innerHTML = e;
-            document.getElementById('stat').textContent = 'Slots tried: ' + st.tries + '   Backtracks: ' + st.back;
-            var l = document.getElementById('log'); l.textContent = st.msg; l.className = 'log ' + st.kind;
-            document.getElementById('phase').textContent = st.phase;
-            renderGraph();
-            updateChart();
-        }
-        /* Third view: the same state drawn as a graph (dots = exams, lines = conflicts). */
-        var P = [[380, 220], [60, 230], [120, 90], [300, 90], [210, 250], [60, 330]]; /* Bio, History, Math, Physics, Chem, Art */
-        function renderGraph() {
-            var a, b, h = '', dx, dy, d, stroke, w, isNew, isLook, s, ring, fill;
-            for (a = 0; a < N; a++)for (b = a + 1; b < N; b++) {
-                if (!st.cf[a][b]) continue;
-                dx = P[b][0] - P[a][0]; dy = P[b][1] - P[a][1]; d = Math.sqrt(dx * dx + dy * dy);
-                isNew = st.newc.some(function (p) { return p[0] === a && p[1] === b; });
-                isLook = st.look && ((st.look[0] === a && st.look[1] === b) || (st.look[0] === b && st.look[1] === a));
-                stroke = 'var(--mute)'; w = 1.5;
-                if (isNew) { stroke = 'var(--new)'; w = 4; }
-                if (isLook) { stroke = st.hit ? 'var(--bad)' : 'var(--look)'; w = 4; }
-                h += '<line x1="' + (P[a][0] + dx / d * 28) + '" y1="' + (P[a][1] + dy / d * 28) + '" x2="' + (P[b][0] - dx / d * 28) + '" y2="' + (P[b][1] - dy / d * 28) +
-                    '" stroke="' + stroke + '" stroke-width="' + w + '"/>';
-            }
-            for (a = 0; a < N; a++) {
-                s = st.slot[a];
-                fill = s < 0 ? 'var(--low)' : 'var(--s' + s + ')';
-                ring = st.fail === a ? 'var(--bad)' : st.row === a ? 'var(--look)' : 'var(--line)';
-                w = (st.fail === a || st.row === a) ? 5 : 1.5;
-                h += '<circle cx="' + P[a][0] + '" cy="' + P[a][1] + '" r="28" fill="' + fill + '" stroke="' + ring + '" stroke-width="' + w + '"/>' +
-                    '<text x="' + P[a][0] + '" y="' + P[a][1] + '" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="' +
-                    (s < 0 ? 'var(--fg)' : '#fff') + '">' + names[a] + '</text>';
-            }
-            document.getElementById('graph').innerHTML = h;
-        }
-        /* Fourth view: Big-O chart. Neon curves: build O(N), check O(N^2), search O(3^N) worst case. */
-        var CH = { x0: 56, x1: 436, y0: 310, y1: 34, nMax: 10, yMax: 600 };
-        function cx(n) { return CH.x0 + n / CH.nMax * (CH.x1 - CH.x0); }
-        function cy(v) { return CH.y0 - Math.min(v, CH.yMax * 50) / CH.yMax * (CH.y0 - CH.y1); }
-        function curve(f) { var d = '', n, i; for (i = 0; i <= 100; i++) { n = i / 10; d += (i === 0 ? 'M' : 'L') + cx(n).toFixed(1) + ' ' + cy(f(n)).toFixed(1) + ' '; } return d; }
-        function buildChart() {
-            var h, v, n, tot = 0;
-            events.forEach(function (e) { if (e.t === 'try') tot++; });
-            h = '<defs><linearGradient id="bgc" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#150f2e"/><stop offset="1" stop-color="#3a1245"/></linearGradient>' +
-                '<linearGradient id="hot" gradientUnits="userSpaceOnUse" x1="0" y1="310" x2="0" y2="34"><stop offset="0" stop-color="#ffd23f"/><stop offset=".5" stop-color="#ff4d8d"/><stop offset="1" stop-color="#ff2e2e"/></linearGradient>' +
-                '<filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>' +
-                '<clipPath id="pc"><rect x="56" y="34" width="380" height="276"/></clipPath></defs>' +
-                '<rect width="460" height="360" rx="14" fill="url(#bgc)"/>' +
-                '<text x="230" y="22" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">Big-O: how the work explodes</text>';
-            for (v = 0; v <= 600; v += 150) {
-                h += '<line x1="56" x2="436" y1="' + cy(v) + '" y2="' + cy(v) + '" stroke="rgba(255,255,255,.12)"/>' +
-                    '<text x="48" y="' + (cy(v) + 4) + '" text-anchor="end" font-size="11" fill="#b9a8e8">' + v + '</text>';
-            }
-            for (n = 0; n <= 10; n += 2) { h += '<text x="' + cx(n) + '" y="326" text-anchor="middle" font-size="11" fill="#b9a8e8">' + n + '</text>'; }
-            h += '<line x1="56" y1="310" x2="436" y2="310" stroke="#b9a8e8"/><line x1="56" y1="34" x2="56" y2="310" stroke="#b9a8e8"/>' +
-                '<text x="246" y="348" text-anchor="middle" font-size="12" fill="#b9a8e8">number of exams (N)</text>' +
-                '<text transform="translate(14 172) rotate(-90)" text-anchor="middle" font-size="12" fill="#b9a8e8">steps</text>' +
-                '<line x1="' + cx(6) + '" x2="' + cx(6) + '" y1="34" y2="310" stroke="rgba(255,255,255,.4)" stroke-dasharray="4 4"/>' +
-                '<g clip-path="url(#pc)" fill="none" stroke-linecap="round">' +
-                '<path d="' + curve(function (x) { return x; }) + '" pathLength="1" class="draw" stroke="#38e8ff" stroke-width="3"/>' +
-                '<path d="' + curve(function (x) { return x * x; }) + '" pathLength="1" class="draw" style="animation-delay:.5s" stroke="#5dff9d" stroke-width="3"/>' +
-                '<g filter="url(#glow)"><path d="' + curve(function (x) { return Math.pow(3, x); }) + '" pathLength="1" class="draw" style="animation-delay:1s" stroke="url(#hot)" stroke-width="5"/></g></g>' +
-                '<line x1="68" x2="92" y1="46" y2="46" stroke="url(#hot)" stroke-width="4"/><text x="100" y="50" font-size="12" fill="#fff">O(3ⁿ) search, worst case</text>' +
-                '<line x1="68" x2="92" y1="66" y2="66" stroke="#5dff9d" stroke-width="3"/><text x="100" y="70" font-size="12" fill="#fff">O(N²) check an answer</text>' +
-                '<line x1="68" x2="92" y1="86" y2="86" stroke="#38e8ff" stroke-width="3"/><text x="100" y="90" font-size="12" fill="#fff">O(N) build the graph</text>' +
-                '<text x="' + (cx(6) + 8) + '" y="112" font-size="12" font-weight="700" fill="#ffb3cf">N = 6: 3⁶ = 729</text>' +
-                '<text x="' + (cx(6) + 8) + '" y="127" font-size="11" fill="#ffb3cf">the search ceiling</text>' +
-                '<circle id="dot" cx="' + cx(6) + '" cy="310" r="6" fill="#fff" stroke="#ff4d8d" stroke-width="3" class="pulse"/>' +
-                '<text id="dotlab" x="' + (cx(6) + 12) + '" y="296" font-size="12" font-weight="700" fill="#fff"></text>';
-            document.getElementById('chart').innerHTML = h;
-            document.getElementById('chartnote').textContent = 'The white dot is this run, climbing as slots are tried. It needs ' + tot +
-                ' tries in total, far under the 729 worst case, but the pink curve shows what a bigger schedule could cost. Checking an answer stays on the low green curve.';
-        }
-        function updateChart() {
-            var y = cy(st.tries), l = document.getElementById('dotlab');
-            document.getElementById('dot').setAttribute('cy', y);
-            l.setAttribute('y', y - 12); l.textContent = 'your run: ' + st.tries + ' tries';
-        }
-        function step() {
-            if (pos >= events.length) { stop(); return false; }
-            apply(events[pos++]); render(); return true;
-        }
-        function stop() { clearTimeout(timer); timer = null; document.getElementById('play').textContent = 'Play'; }
-        function tick() {
-            if (!step()) return;
-            timer = setTimeout(tick, 1100 - document.getElementById('speed').value * 100);
-        }
-        document.getElementById('play').onclick = function () {
-            if (timer) { stop(); return; }
-            if (pos >= events.length) reset();
-            this.textContent = 'Pause'; tick();
-        };
-        document.getElementById('step').onclick = function () { stop(); step(); };
-        document.getElementById('reset').onclick = function () { stop(); reset(); };
-        buildChart();
-        reset();
-    </script>
+var events=buildEvents(),pos,st,timer=null;
+function reset(){
+  var i,j;st={cf:[],slot:[],row:-1,look:null,hit:false,newc:[],fail:-1,msg:'Press Play or Step to begin.',kind:'',phase:'',back:0,tries:0};
+  for(i=0;i<N;i++){st.cf.push([]);st.slot.push(-1);for(j=0;j<N;j++)st.cf[i].push(false);}
+  pos=0;render();
+}
+function apply(v){
+  st.look=null;st.hit=false;st.newc=[];st.fail=-1;st.kind='';st.msg=v.msg;
+  if(v.t==='add'){st.cf[v.a][v.b]=st.cf[v.b][v.a]=true;st.newc=[[v.a,v.b],[v.b,v.a]];st.phase='Phase 1: building the grid';st.row=-1;}
+  else{st.phase='Phase 2: solving';
+    if(v.t==='try'){st.row=v.e;st.tries++;}
+    if(v.t==='check'){st.row=v.e;st.look=[v.e,v.o];st.hit=v.hit;if(v.hit)st.kind='bad';}
+    if(v.t==='place'){st.slot[v.e]=v.c;}
+    if(v.t==='undo'){st.slot[v.e]=-1;st.row=v.e;st.back++;st.kind='bad';}
+    if(v.t==='fail'){st.fail=v.e;st.row=v.e;st.kind='bad';}
+    if(v.t==='done'){st.row=-1;st.kind='good';}
+  }
+}
+function render(){
+  var h='<table><tr><th></th>',r,c,cls,txt;
+  for(c=0;c<N;c++)h+='<th class="'+(st.row===c?'':'')+'">'+names[c]+'</th>';
+  h+='</tr>';
+  for(r=0;r<N;r++){
+    h+='<tr><th class="rowh'+(st.row===r?' cur':'')+'">'+names[r]+'</th>';
+    for(c=0;c<N;c++){
+      cls=r>c?'low':'';txt='';
+      if(st.cf[r][c]){cls+=' on';txt='x';}
+      if(st.newc.some(function(p){return p[0]===r&&p[1]===c;})){cls+=' new';txt='*';}
+      if(st.look&&st.look[0]===r&&st.look[1]===c){cls+=' look'+(st.hit?' hit':'');}
+      h+='<td class="'+cls+'">'+txt+'</td>';
+    }
+    h+='</tr>';
+  }
+  document.getElementById('grid').innerHTML=h+'</table>';
+  var e='',s;
+  for(r=0;r<N;r++){
+    s=st.slot[r];
+    e+='<div class="ex'+(st.fail===r?' fail':st.row===r?' cur':'')+'"><b>'+names[r]+'</b>'+
+      (s<0?'<span class="chip none">no slot</span>':'<span class="chip" style="background:var(--s'+s+')">'+slots[s]+'</span>')+'</div>';
+  }
+  document.getElementById('exams').innerHTML=e;
+  document.getElementById('stat').textContent='Slots tried: '+st.tries+'   Backtracks: '+st.back;
+  var l=document.getElementById('log');l.textContent=st.msg;l.className='log '+st.kind;
+  document.getElementById('phase').textContent=st.phase;
+  renderGraph();
+  updateChart();
+  renderTree();
+}
+/* Third view: the same state drawn as a graph (dots = exams, lines = conflicts). */
+var P=[[380,220],[60,230],[120,90],[300,90],[210,250],[60,330]]; /* Bio, History, Math, Physics, Chem, Art */
+function renderGraph(){
+  var a,b,h='',dx,dy,d,stroke,w,isNew,isLook,s,ring,fill;
+  for(a=0;a<N;a++)for(b=a+1;b<N;b++){
+    if(!st.cf[a][b])continue;
+    dx=P[b][0]-P[a][0];dy=P[b][1]-P[a][1];d=Math.sqrt(dx*dx+dy*dy);
+    isNew=st.newc.some(function(p){return p[0]===a&&p[1]===b;});
+    isLook=st.look&&((st.look[0]===a&&st.look[1]===b)||(st.look[0]===b&&st.look[1]===a));
+    stroke='var(--mute)';w=1.5;
+    if(isNew){stroke='var(--new)';w=4;}
+    if(isLook){stroke=st.hit?'var(--bad)':'var(--look)';w=4;}
+    h+='<line x1="'+(P[a][0]+dx/d*28)+'" y1="'+(P[a][1]+dy/d*28)+'" x2="'+(P[b][0]-dx/d*28)+'" y2="'+(P[b][1]-dy/d*28)+
+       '" stroke="'+stroke+'" stroke-width="'+w+'"/>';
+  }
+  for(a=0;a<N;a++){
+    s=st.slot[a];
+    fill=s<0?'var(--low)':'var(--s'+s+')';
+    ring=st.fail===a?'var(--bad)':st.row===a?'var(--look)':'var(--line)';
+    w=(st.fail===a||st.row===a)?5:1.5;
+    h+='<circle cx="'+P[a][0]+'" cy="'+P[a][1]+'" r="28" fill="'+fill+'" stroke="'+ring+'" stroke-width="'+w+'"/>'+
+       '<text x="'+P[a][0]+'" y="'+P[a][1]+'" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="'+
+       (s<0?'var(--fg)':'#fff')+'">'+names[a]+'</text>';
+  }
+  document.getElementById('graph').innerHTML=h;
+}
+/* Fourth view: Big-O chart. Neon curves: build O(N), check O(N^2), search O(3^N) worst case. */
+var CH={x0:56,x1:436,y0:310,y1:34,nMax:10,yMax:600};
+function cx(n){return CH.x0+n/CH.nMax*(CH.x1-CH.x0);}
+function cy(v){return CH.y0-Math.min(v,CH.yMax*50)/CH.yMax*(CH.y0-CH.y1);}
+function curve(f){var d='',n,i;for(i=0;i<=100;i++){n=i/10;d+=(i===0?'M':'L')+cx(n).toFixed(1)+' '+cy(f(n)).toFixed(1)+' ';}return d;}
+function buildChart(){
+  var h,v,n,tot=0;
+  events.forEach(function(e){if(e.t==='try')tot++;});
+  h='<defs><linearGradient id="bgc" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#150f2e"/><stop offset="1" stop-color="#3a1245"/></linearGradient>'+
+    '<linearGradient id="hot" gradientUnits="userSpaceOnUse" x1="0" y1="310" x2="0" y2="34"><stop offset="0" stop-color="#ffd23f"/><stop offset=".5" stop-color="#ff4d8d"/><stop offset="1" stop-color="#ff2e2e"/></linearGradient>'+
+    '<filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>'+
+    '<clipPath id="pc"><rect x="56" y="34" width="380" height="276"/></clipPath></defs>'+
+    '<rect width="460" height="360" rx="14" fill="url(#bgc)"/>'+
+    '<text x="230" y="22" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">Big-O: how the work explodes</text>';
+  for(v=0;v<=600;v+=150){
+    h+='<line x1="56" x2="436" y1="'+cy(v)+'" y2="'+cy(v)+'" stroke="rgba(255,255,255,.12)"/>'+
+       '<text x="48" y="'+(cy(v)+4)+'" text-anchor="end" font-size="11" fill="#b9a8e8">'+v+'</text>';
+  }
+  for(n=0;n<=10;n+=2){h+='<text x="'+cx(n)+'" y="326" text-anchor="middle" font-size="11" fill="#b9a8e8">'+n+'</text>';}
+  h+='<line x1="56" y1="310" x2="436" y2="310" stroke="#b9a8e8"/><line x1="56" y1="34" x2="56" y2="310" stroke="#b9a8e8"/>'+
+     '<text x="246" y="348" text-anchor="middle" font-size="12" fill="#b9a8e8">number of exams (N)</text>'+
+     '<text transform="translate(14 172) rotate(-90)" text-anchor="middle" font-size="12" fill="#b9a8e8">steps</text>'+
+     '<line x1="'+cx(6)+'" x2="'+cx(6)+'" y1="34" y2="310" stroke="rgba(255,255,255,.4)" stroke-dasharray="4 4"/>'+
+     '<g clip-path="url(#pc)" fill="none" stroke-linecap="round">'+
+     '<path d="'+curve(function(x){return x;})+'" pathLength="1" class="draw" stroke="#38e8ff" stroke-width="3"/>'+
+     '<path d="'+curve(function(x){return x*x;})+'" pathLength="1" class="draw" style="animation-delay:.5s" stroke="#5dff9d" stroke-width="3"/>'+
+     '<g filter="url(#glow)"><path d="'+curve(function(x){return Math.pow(3,x);})+'" pathLength="1" class="draw" style="animation-delay:1s" stroke="url(#hot)" stroke-width="5"/></g></g>'+
+     '<line x1="68" x2="92" y1="46" y2="46" stroke="url(#hot)" stroke-width="4"/><text x="100" y="50" font-size="12" fill="#fff">O(3ⁿ) search, worst case</text>'+
+     '<line x1="68" x2="92" y1="66" y2="66" stroke="#5dff9d" stroke-width="3"/><text x="100" y="70" font-size="12" fill="#fff">O(N²) check an answer</text>'+
+     '<line x1="68" x2="92" y1="86" y2="86" stroke="#38e8ff" stroke-width="3"/><text x="100" y="90" font-size="12" fill="#fff">O(N) build the graph</text>'+
+     '<text x="'+(cx(6)+8)+'" y="112" font-size="12" font-weight="700" fill="#ffb3cf">N = 6: 3⁶ = 729</text>'+
+     '<text x="'+(cx(6)+8)+'" y="127" font-size="11" fill="#ffb3cf">the search ceiling</text>'+
+     '<circle id="dot" cx="'+cx(6)+'" cy="310" r="6" fill="#fff" stroke="#ff4d8d" stroke-width="3" class="pulse"/>'+
+     '<text id="dotlab" x="'+(cx(6)+12)+'" y="296" font-size="12" font-weight="700" fill="#fff"></text>';
+  document.getElementById('chart').innerHTML=h;
+  document.getElementById('chartnote').textContent='The white dot is this run, climbing as slots are tried. It needs '+tot+
+    ' tries in total, far under the 729 worst case, but the pink curve shows what a bigger schedule could cost. Checking an answer stays on the low green curve.';
+}
+function updateChart(){
+  var y=cy(st.tries),l=document.getElementById('dotlab');
+  document.getElementById('dot').setAttribute('cy',y);
+  l.setAttribute('y',y-12);l.textContent='your run: '+st.tries+' tries';
+}
+/* Fifth view (back of the flip card): the search tree the solver has explored so far.
+   It is derived from the recorded events up to the current step, so nothing else changes. */
+var TC={colW:70,rowH:18,x0:14,top:40,w:34};
+function treeNodes(){
+  var nodes=[],path=[],i,v;
+  for(i=0;i<pos;i++){
+    v=events[i];
+    if(v.t==='try'){nodes.push({lvl:v.e,c:v.c,par:v.e>0?path[v.e-1]:-1,s:'try'});path[v.e]=nodes.length-1;}
+    else if(v.t==='check'&&v.hit){nodes[path[v.e]].s='clash';}
+    else if(v.t==='place'){nodes[path[v.e]].s='ok';}
+    else if(v.t==='undo'){nodes[path[v.e]].s='undone';}
+  }
+  return nodes;
+}
+function renderTree(){
+  var nodes=treeNodes(),h='',i,n,p,x,y,px,py,fill,ring,rw,tc,lab,H,wrap,total=(Math.pow(K,N+1)-K)/(K-1);
+  for(i=0;i<N;i++){
+    h+='<text x="'+(TC.x0+i*TC.colW+TC.w/2)+'" y="18" text-anchor="middle" font-size="11" font-weight="700" fill="var(--mute)">'+names[i]+'</text>';
+  }
+  h+='<line x1="8" x2="452" y1="28" y2="28" stroke="var(--line)"/>';
+  for(i=0;i<nodes.length;i++){
+    n=nodes[i];
+    if(n.par>=0){
+      p=nodes[n.par];x=TC.x0+n.lvl*TC.colW;y=TC.top+i*TC.rowH;
+      px=TC.x0+p.lvl*TC.colW+TC.w;py=TC.top+n.par*TC.rowH;
+      h+='<path d="M'+px+' '+py+' H'+(px+(x-px)/2)+' V'+y+' H'+x+'" fill="none" stroke="var(--line)" stroke-width="1.5"/>';
+    }
+  }
+  for(i=0;i<nodes.length;i++){
+    n=nodes[i];x=TC.x0+n.lvl*TC.colW;y=TC.top+i*TC.rowH;
+    fill='var(--card)';ring='none';rw=0;tc='var(--fg)';lab='S'+(n.c+1);
+    if(n.s==='ok'){fill='var(--s'+n.c+')';tc='#fff';}
+    if(n.s==='clash'){fill='var(--bad)';tc='#fff';lab='✗ '+lab;}
+    if(n.s==='undone'){fill='var(--low)';tc='var(--mute)';ring='var(--mute)';rw=1;}
+    if(n.s==='try'){ring='var(--look)';rw=3;}
+    h+='<rect x="'+x+'" y="'+(y-7)+'" width="'+TC.w+'" height="14" rx="7" fill="'+fill+'" stroke="'+ring+'" stroke-width="'+rw+'"'+(n.s==='undone'?' stroke-dasharray="3 2"':'')+'/>'+
+       '<text x="'+(x+TC.w/2)+'" y="'+y+'" text-anchor="middle" dominant-baseline="central" font-size="10" font-weight="600" fill="'+tc+'">'+lab+'</text>';
+  }
+  H=Math.max(120,TC.top+nodes.length*TC.rowH+10);
+  p=document.getElementById('tree');
+  p.setAttribute('width',460);p.setAttribute('height',H);p.setAttribute('viewBox','0 0 460 '+H);
+  p.innerHTML=h;
+  document.getElementById('treesum').textContent=nodes.length?
+    'Nodes visited: '+nodes.length+' of '+total.toLocaleString()+' in the full tree. Backtracks: '+st.back+'.':
+    'Press Play: the tree grows as the solver tries slots.';
+}
+function step(){
+  if(pos>=events.length){stop();return false;}
+  apply(events[pos++]);render();return true;
+}
+function stop(){clearTimeout(timer);timer=null;document.getElementById('play').textContent='Play';}
+function tick(){
+  if(!step())return;
+  timer=setTimeout(tick,1100-document.getElementById('speed').value*100);
+}
+document.getElementById('play').onclick=function(){
+  if(timer){stop();return;}
+  if(pos>=events.length)reset();
+  this.textContent='Pause';tick();
+};
+document.getElementById('step').onclick=function(){stop();step();};
+document.getElementById('reset').onclick=function(){stop();reset();};
+function flip(){
+  var el=document.getElementById('flipinner');
+  el.classList.toggle('flipped');
+  if(el.classList.contains('flipped')){buildChart();updateChart();} /* replay the chart's draw-in */
+}
+document.getElementById('flipfront').onclick=flip;
+document.getElementById('flipback').onclick=flip;
+buildChart();
+reset();
+</script>
 </body>
-
 </html>
